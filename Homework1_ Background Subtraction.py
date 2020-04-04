@@ -89,7 +89,8 @@ def part3():
     # How well does each technique work?  What could be improved about the output?
 
 # Bonus:
-#
+
+
 def movie():
     """Run the thresholding technique on each frame of the video and show the result as a movie.
     """
