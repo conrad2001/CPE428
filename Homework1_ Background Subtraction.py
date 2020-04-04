@@ -117,6 +117,9 @@ def movie():
     video.release()
 
 # Detect a bounding box around each car and show the result as a movie.
+def main():
+    movie()
 
-movie()
+if __name__ == '__main__':
+    main()
 
