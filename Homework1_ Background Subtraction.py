@@ -122,16 +122,16 @@ def bounding():
     cap = cv2.VideoCapture('frames/%06d.jpg')
     threshold = 30
     size = 0
-    count = False
+    first_frame = True
     previous = 0
     Otsu_arr = []
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        if not count:
+        if first_frame:
             previous = frame
-            count = True
+            first_frame = False
         else:
             current = frame
             abs_diff = cv2.absdiff(previous, current)
