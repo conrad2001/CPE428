@@ -56,7 +56,6 @@ def part2():
         i += 1
     # calculate the mean frame
     mean = np.mean([gray for gray in grays], axis=0).astype('uint8')
-    print(mean)
     # Show the average image, what we will call the "background" image.  The cars have disappeared!  Why?
     cv2.imshow('average frame', mean)
     # Save the background image to a PNG.
@@ -95,10 +94,9 @@ def movie():
     """Run the thresholding technique on each frame of the video and show the result as a movie.
     """
     cap = cv2.VideoCapture('frames/%06d.jpg')
-    i = 0
     threshold = 30
     size = 0
-    video_arr = []
+    Otsu_arr = []
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -108,20 +106,52 @@ def movie():
         height, width = np.shape(Otsu)
         Otsu = cv2.cvtColor(Otsu, cv2.COLOR_GRAY2BGR)
         size = (width, height)
-        video_arr.append(Otsu)
-        i += 1
+        Otsu_arr.append(Otsu)
     directory = r'C:\Users\User01\PycharmProjects\CPE428\movie'
     os.chdir(directory)
     video = cv2.VideoWriter(filename="Otsu.avi", fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'), fps=5, frameSize=size)
-    for Otsu in video_arr:
+    for Otsu in Otsu_arr:
         video.write(Otsu)
     video.release()
 
 # Detect a bounding box around each car and show the result as a movie.
 
+def bounding():
+    """Run the thresholding technique on each frame of the video and show the result as a movie.
+    """
+    cap = cv2.VideoCapture('frames/%06d.jpg')
+    threshold = 30
+    size = 0
+    count = False
+    previous = 0
+    Otsu_arr = []
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if not count:
+            previous = frame
+            count = True
+        else:
+            current = frame
+            abs_diff = cv2.absdiff(previous, current)
+            gray = cv2.cvtColor(abs_diff, cv2.COLOR_BGR2GRAY)      # change to grayscale
+            Ret_Otsu, Otsu = cv2.threshold(gray, threshold, 255, cv2.THRESH_OTSU)
+            height, width = np.shape(Otsu)
+            Otsu = cv2.cvtColor(Otsu, cv2.COLOR_GRAY2BGR)
+            size = (width, height)
+            Otsu_arr.append(Otsu)
+            previous = current
+    directory = r'C:\Users\User01\PycharmProjects\CPE428\movie'
+    os.chdir(directory)
+    video = cv2.VideoWriter(filename="bounding.avi", fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'), fps=5, frameSize=size)
+    for Otsu in Otsu_arr:
+        video.write(Otsu)
+    video.release()
+
 
 def main():
-    movie()
+    bounding()
 
 
 if __name__ == '__main__':
