@@ -114,10 +114,9 @@ def movie():
         video.write(Otsu)
     video.release()
 
-# Detect a bounding box around each car and show the result as a movie.
 
 def bounding():
-    """Run the thresholding technique on each frame of the video and show the result as a movie.
+    """Detect a bounding box around each car and show the result as a movie.
     """
     cap = cv2.VideoCapture('frames/%06d.jpg')
     threshold = 30
