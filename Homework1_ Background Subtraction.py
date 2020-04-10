@@ -7,7 +7,7 @@ CPE 428
 import numpy as np
 import cv2
 import os
-
+import random
 
 def part1():
     #part 1
@@ -121,29 +121,38 @@ def bounding():
     cap = cv2.VideoCapture('frames/%06d.jpg')
     threshold = 30
     size = 0
-    first_frame = True
-    previous = 0
+    previous = None
     Otsu_arr = []
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        if first_frame:
-            previous = frame
-            first_frame = False
         else:
             current = frame
-            abs_diff = cv2.absdiff(previous, current)
-            gray = cv2.cvtColor(abs_diff, cv2.COLOR_BGR2GRAY)      # change to grayscale
-            Ret_Otsu, Otsu = cv2.threshold(gray, threshold, 255, cv2.THRESH_OTSU)
-            height, width = np.shape(Otsu)
-            Otsu = cv2.cvtColor(Otsu, cv2.COLOR_GRAY2BGR)
-            size = (width, height)
-            Otsu_arr.append(Otsu)
+            if previous is not None:
+                abs_diff = cv2.absdiff(previous, current)
+                gray = cv2.cvtColor(abs_diff, cv2.COLOR_BGR2GRAY)      # change to grayscale
+                Ret_Otsu, Otsu = cv2.threshold(gray, threshold, 255, cv2.THRESH_OTSU)
+                height, width = np.shape(Otsu)
+                bound_img = np.copy(Otsu)
+                bound_img = cv2.cvtColor(bound_img, cv2.COLOR_GRAY2BGR)
+                Otsu = cv2.blur(Otsu, ksize=(3,2))
+                contours, hierarchy = cv2.findContours(Otsu, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+                for cidx, cnt in enumerate(contours):
+                    (x, y, w, h) = cv2.boundingRect(cnt)
+                    # Draw a rectangle with blue line borders of thickness of 1 px
+                    colors = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
+                    cv2.rectangle(bound_img, pt1=(x, y), pt2=(x + w, y + h), color=colors, thickness=1)
+                Otsu_arr.append(bound_img)
+
+
+                size = (width, height)
+
             previous = current
     directory = r'C:\Users\User01\PycharmProjects\CPE428\movie'
     os.chdir(directory)
-    video = cv2.VideoWriter(filename="bounding.avi", fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'), fps=5, frameSize=size)
+    video = cv2.VideoWriter(filename="bounding.avi", fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'), fps=15, frameSize=size)
     for Otsu in Otsu_arr:
         video.write(Otsu)
     video.release()
