@@ -145,10 +145,7 @@ def bounding():
                     colors = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
                     cv2.rectangle(bound_img, pt1=(x, y), pt2=(x + w, y + h), color=colors, thickness=1)
                 Otsu_arr.append(bound_img)
-
-
                 size = (width, height)
-
             previous = current
     directory = r'C:\Users\User01\PycharmProjects\CPE428\movie'
     os.chdir(directory)
