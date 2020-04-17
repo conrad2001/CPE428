@@ -93,15 +93,16 @@ def HW2(video_name):
         frames.append(frame)
     # show the result image
     cv2.imshow(video_name+'_show.png', frames[50])
-    if video_name == 'wand.mov':
+    video_name = [token for token in video_name if token not in ".mov"]
+    video_name = ''.join(video_name)
+    if video_name == 'wand':
         mean = np.mean([stick_length for stick_length in stick_lengths])
         stdiv = np.std(stick_lengths)
         error = abs(mean - 36) / 36 * 100
-        print('mean of ' + video_name + '= ' + str(format(mean, '.2f')) + ' cm')
-        print('standard deviation of ' + video_name + '= ' + str(format(stdiv, '.2f')))
+        print('mean of ' + video_name + ' is ' + str(format(mean, '.2f')) + ' cm')
+        print('standard deviation of ' + video_name + ' is ' + str(format(stdiv, '.2f')))
         print('compare to the true measurement of 36cm, the % error = ' + str(format(error, '.2f')) + '%')
-    video_name = [token for token in video_name if token not in ".mov"]
-    video_name = ''.join(video_name)
+
     os.chdir(r'C:\Users\User01\PycharmProjects\CPE428\HW2\output')
     video = cv2.VideoWriter(filename=(video_name+'.avi'), fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'), fps=30,
                             frameSize=(width, height))
