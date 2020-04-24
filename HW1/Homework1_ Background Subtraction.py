@@ -17,17 +17,17 @@ def part1():
     path = r'frames\000000.jpg'
     image = cv2.imread(path)
     image = np.array(image, dtype=np.uint8)
-    cv2.imshow('000000.jpg', image)
+    # cv2.imshow('000000.jpg', image)
     # Print the shape of the Numpy array containing the image -- what do the sizes of the dimensions mean?
-    print(np.shape(image))
+    # print(np.shape(image))
     # Print the image itself -- what do these numbers mean?
-    print(image)
+    # print(image)
     # Convert the image to grayscale using cv2.cvtColor() and show it.
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     cv2.imshow('grayscale', gray)
     # Save the grayscale image to a PNG using cv2.imwrite().
     cv2.imwrite('part1.png', gray)
-    cv2.waitKey(3000)
+    cv2.waitKey(10000)
 
 def part2():
     """
@@ -147,8 +147,7 @@ def bonus2():
 
 
 def main():
-    bonus1()
-    bonus2()
+    part1()
 
 
 if __name__ == '__main__':
