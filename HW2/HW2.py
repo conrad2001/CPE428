@@ -3,10 +3,10 @@ CPE 428
 HW2
 Conrad Chan
 """
-import numpy as np
 import os
 import cv2
 
+import numpy as np
 
 def HW2(video_name):
     """
@@ -14,7 +14,7 @@ def HW2(video_name):
     """
     # part 1
     # Use a command line argument to specify the path of the video to open.
-    os.chdir(r'C:\Users\User01\PycharmProjects\CPE428\HW2')
+    video_name = (r'C:\Users\User01\PycharmProjects\CPE428\HW2')
     # Convert each frame of the video to grayscale and apply a Gaussian blur of size 9x9 with sigma=2.
     cap = cv2.VideoCapture(video_name)
     i = 0
@@ -53,8 +53,8 @@ def HW2(video_name):
                 # part 2
                 # For each detected circle, compute the projected position of the ball in
                 # camera coordinates ("remove" the focal length and principal point).
-                x_camera = x-cx/f
-                y_camera = y-cy/f
+                x_camera = (x-cx)/f
+                y_camera = (y-cy)/f
                 # Compute the Z value of the ball's (X,Y,Z) coordinates based on the
                 # known radius of the physical ball and the radius of the detected circle.
                 Z = R/radius*f
@@ -143,7 +143,7 @@ def draw_lines(img, points):
     cv2.line(img, lower_left, upper_left, color=(255, 0, 255), thickness=1)
 
 if __name__ == '__main__':
-    HW2('wand.mov')
     HW2('red.mov')
-    HW2('blue.mov')
-    HW2('redblue.mov')
+    #HW2('red.mov')
+    #HW2('blue.mov')
+    #HW2('redblue.mov')
