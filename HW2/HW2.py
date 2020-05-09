@@ -5,16 +5,16 @@ Conrad Chan
 """
 import os
 import cv2
-
+import sys
 import numpy as np
 
-def HW2(video_name):
+def HW2():
     """
     :return:
     """
     # part 1
     # Use a command line argument to specify the path of the video to open.
-    video_name = (r'C:\Users\User01\PycharmProjects\CPE428\HW2')
+    video_name = sys.argv[1]#(r'C:\Users\User01\PycharmProjects\CPE428\HW2')
     # Convert each frame of the video to grayscale and apply a Gaussian blur of size 9x9 with sigma=2.
     cap = cv2.VideoCapture(video_name)
     i = 0
@@ -142,8 +142,9 @@ def draw_lines(img, points):
     cv2.line(img, lower_right, lower_left, color=(255, 0, 255), thickness=1)
     cv2.line(img, lower_left, upper_left, color=(255, 0, 255), thickness=1)
 
+
 if __name__ == '__main__':
-    HW2('red.mov')
+    HW2()
     #HW2('red.mov')
     #HW2('blue.mov')
     #HW2('redblue.mov')

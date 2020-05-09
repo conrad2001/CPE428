@@ -3,6 +3,7 @@ import os
 import numpy as np
 from HW3 import HW3
 
+
 path = 'videos/Record_17.avi'
 save_path = r'videos/images'
 
@@ -14,7 +15,6 @@ def video2image():
     """
     # Set up a video capture using cv2.VideoCapture('frames/%06d.jpg').
     cap = cv2.VideoCapture(path)
-
     # Show each frame of the video
     i = 0
     grays = []
@@ -111,7 +111,6 @@ def shortenVideo():
     height = width = depth = 0
     Otsu_arr = []
     i = 0
-    os.chdir(r'videos/image/')
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
