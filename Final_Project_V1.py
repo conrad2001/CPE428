@@ -6,7 +6,6 @@ from random import random
 import imutils
 from imutils.video import VideoStream
 from imutils.video import FPS
-import argparse
 
 def print_ground():
     ground = np.matrix([[]])
