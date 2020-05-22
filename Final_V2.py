@@ -270,13 +270,8 @@ def final():
     screen_width, screen_hight = screen_size
     Cx = screen_width / 2.0
     Cy = screen_hight / 2.0 + 40
-    focal_l = 1000
-
+    focal_l = 2500
     background_img = back_ground(screen_size)
-
-    far_end = 300
-    focal_l = far_end * 60 / 3  # tree_dist*tree_pixels/tree_height
-
     head_size = 100  # define half of the head size in pixels
     # extract the OpenCV version info
     (major, minor) = cv.__version__.split(".")[:2]
@@ -314,7 +309,7 @@ def final():
             center_y = int(center_y / 2)
 
             color = (int(random() * 255), int(random() * 255), int(random() * 255))
-            cv.putText(frame, 'Stand 1m away. Place your head in the box!', (30, 40), cv.FONT_HERSHEY_SIMPLEX, 0.8,
+            cv.putText(frame, 'Place your head in the box!', (30, 40), cv.FONT_HERSHEY_SIMPLEX, 0.8,
                        color, 2,
                        cv.LINE_AA)
             cv.rectangle(frame, (center_x - head_size, center_y - head_size),
