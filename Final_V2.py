@@ -363,7 +363,11 @@ def final():
         #frame = cv.resize(frame, screen_size)
         final_img = copy.copy(background_img)
 
-        if man_pos is not None and man_pos[0] < screen_size[0] and man_pos[1] < screen_size[1]:
+        if initBB is None:
+            # show the output frame
+            cv.imshow("game", frame)
+
+        elif man_pos is not None and man_pos[0] < screen_size[0] and man_pos[1] < screen_size[1]:
             man_on_img_pos = map_man_2_img(man_pos, (origin_frame_x, origin_frame_y), (60, 38))  # (x,z) of man
             draw_man(man_on_img_pos, final_img)  # accept(x,y), x: left/right   y: front/back   z: hight
 
@@ -384,8 +388,7 @@ def final():
                            cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             cv.imshow('game', final_img)
         else:
-            # show the output frame
-            cv.imshow("game", frame)
+            cv.imshow("game", background_img)
 
         key = cv.waitKey(1) & 0xFF
         if key == ord("q"):
