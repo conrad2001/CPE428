@@ -15,16 +15,20 @@ def HW4(bonus=False):
     # 2.Detect SIFT features and compute descriptors for them using sift.detectAndCompute().
     sift = cv2.xfeatures2d.SIFT_create()
     kp1, des_stone = sift.detectAndCompute(gray, None)
-    stone = cv2.drawKeypoints(img1,kp1,img1)
+    img1 = cv2.drawKeypoints(img1,kp1,img1)
     # 3.Show the SIFT features on the image.
-    #cv2.imshow('stone_sift', stone)
+    # cv2.imshow('sift', draw_keypts)
     # 4.Iterate through the frames of the video and detect SIFT features & descriptors on each frame
     cap = cv2.VideoCapture('input.mov')
     # Part 2, 1.Create a "brute force" matcher (BFMatcher) object.
     bf = cv2.BFMatcher()
     i = 0
-    filename = 'boarder_Chan.avi'
+    inlier_ = outlier_ = 0
     frame_size = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    filename = 'overlay_Chan.avi' if bonus else 'boarder_Chan.avi'
+    video = cv2.VideoWriter(filename=filename, fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'), fps=30,
+                            frameSize=frame_size)
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -60,15 +64,20 @@ def HW4(bonus=False):
         else:
             print("Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT))
             matchesMask = None
-        if i == 200:
-            draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
-                               singlePointColor=None,
-                               matchesMask=matchesMask,  # draw only inliers
-                               flags=2)
-            # 4.Draw the inlier matches between the video frame and the target image using cv.drawMatches()
-            inlier_matches = cv2.drawMatches(stone, kp1, frame, kp2, good, None, **draw_params)
-            cv2.imwrite('inlier_matches'+str(i)+'.png', inlier_matches)
-            break
+        # 4.Draw the inlier matches between the video frame and the target image using cv.drawMatches()
+
+        draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
+                           singlePointColor=None,
+                           matchesMask=matchesMask,  # draw only inliers
+                           flags=2)
+        inlier_matches = cv2.drawMatches(img1, kp1, frame, kp2, good, None, **draw_params)
+        # cv2.imwrite('inlier_matches'+str(i)+'.png', inlier_matches)
+        if not i:
+            inlier_h, inlier_w, inlier_d = inlier_matches.shape
+            video2 = cv2.VideoWriter(filename='matches.avi', fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'),
+                                     fps=15,
+                                     frameSize=(inlier_w, inlier_h))
+        video2.write(inlier_matches)
         if bonus:
             # bonus
             # Use the calculate homography to warp the overlay image (see cv.perspectiveWarp() ).
@@ -81,19 +90,26 @@ def HW4(bonus=False):
             overlay = cv2.warpPerspective(overlay, H, frame_size)
             # Calculate the composite image as (1-mask) * frame + mask * overlay.
             comp_img = np.multiply(1-mask, frame) + np.multiply(mask, overlay)
-            filename = 'overlay_Chan.avi'
-            if not i:
-                video = cv2.VideoWriter(filename=filename, fourcc=cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'), fps=25,
-                                        frameSize=frame_size)
-            video.write(np.uint8(comp_img))
-        else:
-            video.write(frame)
+            frame = np.uint8(comp_img)
+        video.write(frame)
         i += 1
+    # part 3  5. Calculate the average percentage of inliers.
+    for i in range(len(good)):
+        if matchesMask[i]:
+            inlier_ += 1
+        else:
+            outlier_ += 1
+    percent_inlier = inlier_ / (inlier_ + outlier_) * 100
+    percent_outlier = 100-percent_inlier
+    print("percent inlier = %.6f" % percent_inlier)
+    print("percent outlier = %.6f" % percent_outlier)
     video.release()
-
+    cv2.destroyAllWindows()
 
 
 
 
 if __name__ == '__main__':
+    # True to generate output with overlay
+    # False to generate output with border
     HW4(True)
