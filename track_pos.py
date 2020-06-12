@@ -1,17 +1,16 @@
 import cv2 as cv
 import numpy as np
 import copy
-from random import seed
 from random import random
 from imutils.video import VideoStream
 from imutils.video import FPS
 from pygame import mixer  # Load the popular external library
-
+import os
 
 
 def back_ground(screen_size):
     #get background img
-    background_img = cv.imread("Springtime-Golf-Course_AmeriTurf_2019.jpg")
+    background_img = cv.imread("background2.jpg")
     background_img = cv.resize(background_img,screen_size)
     cv.line(background_img,maping(np.matrix([[-30], [1], [0]])),maping(np.matrix([[-30], [500], [0]])),(0,255,0),1)
     cv.line(background_img,maping(np.matrix([[30], [1], [0]])),maping(np.matrix([[30], [500], [0]])),(0,255,0),1)
@@ -71,10 +70,6 @@ def maping(point):
     y = -actual_z/actual_y*focal_l+Cy
     return (int(x), int(y))
 
-def tuple2array(t):
-    a,b = t
-    return [a,b]
-
 def draw_man(point, img):
     actial_x, actual_y, actual_z = point
 
@@ -114,145 +109,6 @@ def draw_man(point, img):
     cv.fillConvexPoly(img, np.array([p8, p6, p5, p7]), (255, 0, 0))
 
 
-def get_player_img(focal_l, Cx, Cy, cap):
-    seed(1)
-    head_size = 50  #define half of the head size in pixels
-    return_img_size = 25
-    return_imgs = []
-
-    while 1:
-        ret, img = cap.read()
-        #print(img.shape) (480,640)
-        center_y, center_x, _ = img.shape
-        center_x = int(center_x/2)
-        center_y = int(center_y/2)
-
-
-        color = (int(random()*255),int(random()*255),int(random()*255))
-        cv.putText(img,'Stand 1m away. Place your head in the box!',(30,40), cv.FONT_HERSHEY_SIMPLEX, 0.8,color,2,cv.LINE_AA)
-        cv.rectangle(img,(center_x-head_size,center_y-head_size),(center_x+head_size,center_y+head_size),color,2)
-
-        #face detection and drawing
-        face_cascade = cv.CascadeClassifier('haarcascade_frontalface_default.xml')
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-
-        for (x,y,w,h) in faces:
-            #cv.rectangle(img,(x,y),(x+w,y+h),(255,255,0),2)
-            area = w*h
-            #print(area)
-            if area < 8500 and area > 6000 and w/2+x > center_x-10 and w/2+x < center_x+10 and h/2+y > center_y-15 and h/2+y < center_y+15:
-                return_img = img[center_y-return_img_size+20:center_y+return_img_size+20, center_x-return_img_size:center_x+return_img_size]
-                return_imgs.append(return_img)
-            elif area > 8500:
-                cv.putText(img,'Stand father away!',(10,100), cv.FONT_HERSHEY_SIMPLEX, 1,color,2,cv.LINE_AA)
-            elif area < 6000:
-                cv.putText(img,'Stand closer!',(10,100), cv.FONT_HERSHEY_SIMPLEX, 1,color,2,cv.LINE_AA)
-
-        cv.imshow('game',img)
-        k = cv.waitKey(30) & 0xff
-        if len(return_imgs) == 20:
-            break
-    cv.destroyAllWindows()
-    return return_imgs[10]
-
-
-def get_man_pos(player_img, frame, kp1, des1, sift):
-    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    kp2, des2 = sift.detectAndCompute(gray, None)
-    bf = cv.BFMatcher()
-    matches = bf.knnMatch(des1, des2, k=2)
-    good = []
-    for m,n in matches:
-        if m.distance < 0.75*n.distance:
-            good.append([m])
-
-    """
-    if len(good) > 10:
-        src_pts = np.float32([ kp1[m[0].queryIdx].pt for m in good ]).reshape(-1,1,2)
-        dst_pts = np.float32([ kp2[m[0].trainIdx].pt for m in good ]).reshape(-1,1,2)
-        H, inliers = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
-        matchesMask = inliers.ravel().tolist()
-        draw_params = dict(matchColor = (0,255,0), # draw matches in green color
-                           singlePointColor = None,
-                           matchesMask = matchesMask, # draw only inliers
-                           flags = 2)
-
-        good = []
-        for i in range(len(good)):
-            if matchesMask[i]:
-                good.append(good[i])
-    """
-    frame_2 = cv.drawMatchesKnn(player_img,kp1,frame,kp2,good,None,flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-
-    """
-    x_lst = []
-    y_lst = []
-    for m in good:
-        x_,y_ = kp2[m[0].trainIdx].pt
-        x_lst.append(x_)
-        y_lst.append(y_)
-    """
-
-    error = 10
-    point_matrix = np.matrix([[],[]])
-    for m in good:
-        x_,y_ = kp2[m[0].trainIdx].pt
-        point_matrix = np.c_[point_matrix, np.matrix([[x_],[y_]])]
-
-    has_error = True
-    while has_error:
-        has_error = False
-        _, num_pts = point_matrix.shape
-
-        sum = point_matrix.sum(axis=1)
-        avg = sum/num_pts   #[[x_avg],[y_avg]]
-
-        if num_pts>7:
-            point_matrix = point_matrix [ :, point_matrix[0].argsort()] #sorted by x
-            point_matrix = point_matrix.reshape(2,-1)
-
-            if point_matrix[(0,num_pts-1)] > point_matrix[(0,num_pts-2)] + error:
-                point_matrix = point_matrix[:,:-1]
-                num_pts = num_pts-1
-                has_error = True
-
-            if point_matrix[(0,0)] < point_matrix[(0,1)] - error:
-                point_matrix = point_matrix[:,1:]
-                num_pts = num_pts-1
-                has_error = True
-
-            point_matrix = point_matrix [ :, point_matrix[1].argsort()] #sorted by y
-            point_matrix = point_matrix.reshape(2,-1)
-
-            if point_matrix[(1,num_pts-1)] > point_matrix[(1,num_pts-2)] + error:
-                point_matrix = point_matrix[:,:-1]
-                num_pts = num_pts-1
-                has_error = True
-
-            if point_matrix[(1,0)] < point_matrix[(1,1)] - error:
-                point_matrix = point_matrix[:,1:]
-                num_pts = num_pts-1
-                has_error = True
-        else:
-            break
-
-    _, num_pts = point_matrix.shape
-
-    """
-    for i in range(num_pts):
-        cv.circle(frame, (int(point_matrix[(0,i)]), int(point_matrix[(1,i)])), 5, (0,255,0), 2)   #(img, center, radius, color, thickness)
-
-    cv.imshow('game',frame)
-    """
-
-    if num_pts > 0:
-        sum = point_matrix.sum(axis=1)
-        avg = sum/num_pts   #[[x_avg],[y_avg]]
-        return (int(avg[0,:]), int(avg[1,:]))
-    else:
-        return None
-
 def map_man_2_img(man_pos, original_map, final_map):
     man_x, man_y = man_pos
     ori_x, ori_y = original_map
@@ -275,21 +131,28 @@ def map_man_2_img(man_pos, original_map, final_map):
     x = map_x/2 - man_x/ori_x*map_x
     z = map_z - man_y/ori_y*map_z
 
-    return (int(x),40,int(z))
+    return (int(x),70,int(z))
     #return (int(),80,int())
 
-def get_tracker(face_cascade, head_size, vs, screen_size, tracker):
+def get_tracker(face_cascade, vs, screen_size, tracker):
     initBB = None
     while initBB is None:
         frame = vs.read()
+        frame_ = copy.copy(frame)
         frame = cv.resize(frame, screen_size)
-        center_y, center_x, _ = frame.shape
+        head_size = 55
+
+        center_y_, center_x_, _ = frame.shape    #after scale
+        center_x_ = int(center_x_ / 2)
+        center_y_ = int(center_y_ / 2)
+
+        center_y, center_x, _ = frame_.shape    #before scale
         center_x = int(center_x / 2)
         center_y = int(center_y / 2)
 
         color = (int(random() * 255), int(random() * 255), int(random() * 255))
-        cv.putText(frame, 'Place your head in the box!', (30, 40), cv.FONT_HERSHEY_SIMPLEX, 0.8, color, 2, cv.LINE_AA)
-        cv.rectangle(frame, (center_x - head_size, center_y - head_size), (center_x + head_size, center_y + head_size), color, 2)
+        cv.putText(frame_, 'Place your head in the box!', (30, 40), cv.FONT_HERSHEY_SIMPLEX, 0.8, color, 2, cv.LINE_AA)
+        cv.rectangle(frame_, (center_x - head_size, center_y - head_size), (center_x + head_size, center_y + head_size), color, 2)
 
         faces = face_cascade.detectMultiScale(frame, 1.3, 5)
 
@@ -298,7 +161,7 @@ def get_tracker(face_cascade, head_size, vs, screen_size, tracker):
             area = w * h
             # print(area)
             # print(area)
-            if area < 50000 and area > 45000 and w/2+x > center_x-10 and w/2+x < center_x+10 and h/2+y > center_y-15 and h/2+y < center_y+15:
+            if area < 30000 and area > 20000 and w/2+x > center_x_-20 and w/2+x < center_x_+20 and h/2+y > center_y_-30 and h/2+y < center_y_+30:
                 # select the bounding box of the object we want to track
                 # start OpenCV object tracker using the supplied bounding box
                 # coordinates, then starpy opencv_object_tracker.py --video 0.04mm.mp4 --tracker csrtt the FPS throughput estimator as well
@@ -306,51 +169,64 @@ def get_tracker(face_cascade, head_size, vs, screen_size, tracker):
                 tracker.init(frame, initBB)
                 fps = FPS().start()
                 # if the `q` key was pressed, break from the loop
-            elif area > 45000:
-                cv.putText(frame, 'Stand father away!', (10, 100), cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
-            elif area < 50000:
-                cv.putText(frame, 'Stand closer!', (10, 100), cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
+            elif area > 30000:
+                cv.putText(frame_, 'Stand father away!', (10, 100), cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
+            elif area < 20000:
+                cv.putText(frame_, 'Stand closer!', (10, 100), cv.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv.LINE_AA)
 
-            cv.imshow("game", frame)
-            cv.waitKey(2)
+        cv.imshow("game", frame_)
+        cv.waitKey(10)
 
     cv.destroyAllWindows()
 
     return (tracker, fps)
 
-def get_man_pos2(tracker, frame, screen_size, man_pos):
+def get_man_pos(tracker, frame, screen_size, man_pos):
     # grab the new bounding box coordinates of the object
     (success, box) = tracker.update(frame)
     # check to see if the tracking was a success
     if success:
         (x, y, w, h) = [int(v) for v in box]
         man_pos = (x + w // 2, y + h//2) if x < screen_size[0] and y < screen_size[1] else man_pos
+        return (x, y, w, h)
     return man_pos
 
-def info_update(final_img, fps):
+def info_update(final_img, fps, speed, enemy_size, num_hits, score):
     (H, W) = final_img.shape[:2]
     # update the FPS counter
     fps.update()
     fps.stop()
     # initialize the set of information we'll be displaying on
     # the frame
+
     info = [
         ("Tracker", "csrt"),
         ("Success", "Yes"),
         ("FPS", "{:.2f}".format(fps.fps())),
+        ("speed", "{:.2f}".format(speed)),
+        ("#enemys", enemy_size),
+        ("hits", num_hits)
     ]
     # loop over the info tuples and draw them on our frame
     for (i, (k, v)) in enumerate(info):
         text = "{}: {}".format(k, v)
-        cv.putText(final_img, text, (10, H - ((i * 20) + 20)),
-                   cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        cv.putText(final_img, text, (10, H - ((i * 30) + 20)),
+                   cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+    blood_test = "HP: "
+    for i in range(score*5):
+        blood_test += "I"
+
+    cv.putText(final_img, blood_test, (100,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+
 
 class enemy:
     def __init__(self):
         self.area = 64
         self.w = random()*14+1
         self.h = self.area/self.w
-        self.d = random() * 5 + 5
+        self.d = random() * 5 + 4
         self.x = random()*(60-self.w)-(30-self.w/2)
         self.y = random()*600+600
         self.z = random()*(38-self.h)
@@ -367,12 +243,12 @@ class enemy:
             self.y = 600
             self.w = random() * 14 + 1
             self.h = self.area / self.w
-            self.d = random() * 5 + 5
+            self.d = random() * 5 + 4
             self.x = random() * (60 - self.w) - (30 - self.w / 2)
             self.z = random() * (38 - self.h)
 
     def draw_enemy(self, img):
-        if self.y<40: return
+        if self.y<70: return
         man_loca = np.matrix([[self.x], [self.y], [self.z]])
         w = self.w
         h = self.h
@@ -416,7 +292,6 @@ class enemy:
         if abs(self.y-y) < (1+speed/2):    #+3 is for accounting error
             if ((z>self.z) and (z-self.z)<self.h) or ((self.z>z) and (self.z-z)<2):
                 if abs(x-self.x)<(self.w/2+1):
-                    cv.waitKey(3000)
                     return True
         return False
 
@@ -424,20 +299,14 @@ class enemy:
 def final():
     global final_img, focal_l, Cx, Cy
 
-    cap = cv.VideoCapture(0)
-
     screen_size = (1300, 650)
     screen_width, screen_hight = screen_size
     Cx = screen_width / 2.0
-    Cy = screen_hight / 2.0 + 70
+    Cy = screen_hight / 2.0 + 100
     focal_l = 2000
-    head_size = 100  # define half of the head size in pixels
-    speed = 9
-
-    background_img = back_ground(screen_size)
-
+    playing = True
+    pos = []
     face_cascade = cv.CascadeClassifier('haarcascade_frontalface_default.xml')
-
     # create tracker
     (major, minor) = cv.__version__.split(".")[:2]
     if int(major) == 3 and int(minor) < 3:
@@ -445,77 +314,44 @@ def final():
     else:
         tracker = cv.TrackerCSRT_create()
 
-
     vs = VideoStream(src=0).start()
-
-    tracker, fps = get_tracker(face_cascade, head_size, vs, screen_size, tracker)
-
-    enemy_size = 6
-
-    enemy_arr = []
-    for i in range(enemy_size):
-        enemy_arr.append(enemy())
-
-
+    tracker, fps = get_tracker(face_cascade, vs, screen_size, tracker)
+    frame_count = 0
     man_pos = None
+    os.chdir(r'C:\Users\User01\PycharmProjects\CPE428\evaluation')
+    video = cv.VideoWriter(filename=('opencv_tracker.avi'), fourcc=cv.VideoWriter_fourcc('M', 'P', 'E', 'G'),
+                           fps=12,
+                           frameSize=screen_size)
 
-    mixer.init()
-    mixer.music.load('audio.mp3')
-    mixer.music.play()
-    while True:
+
+    while playing:
         frame = vs.read() # check to see if we have reached the end of the stream
         if frame is None:
             break
 
         frame = cv.resize(frame, screen_size)
-        #gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-        man_pos = get_man_pos2(tracker, frame, screen_size, man_pos) #update tracker and get man position
+        man_pos = get_man_pos(tracker, frame, screen_size, man_pos) #update tracker and get man position
+        x, y, w, h = man_pos
+        cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
-        origin_frame_y, origin_frame_x, _ = frame.shape
-        final_img = copy.copy(background_img)
-
-        man_on_img_pos = map_man_2_img(man_pos, (origin_frame_x, origin_frame_y), (60, 38))  # (x,z) of man
-
-        for i in range(enemy_size):
-            enemy_arr[enemy_size-1-i].draw_enemy(final_img)
-            if enemy_arr[i].overlap(man_on_img_pos, speed):
-                print("overlap")
-
-        draw_man(man_on_img_pos, final_img)  # accept(x,y), x: left/right   y: front/back   z: hight
-
-
-        for i in range(enemy_size):
-            enemy_arr[i].update(speed)
-
-
-        if random()*100 < 1:
-            enemy_size += 1
-            if speed < 30:
-                speed += 1
-            enemy_arr.append(enemy())
-
-
-        #x1,y1,z1 = man_on_img_pos
-        #x2,y2,z2 = enemy_arr.get_pos()
-
-        # cv.line(final_img,maping(np.matrix([[x1], [y1], [z1]])),maping(np.matrix([[x2], [y2], [z2]])),(0,0,225),2)   #for debugging
-
-
-
-        info_update(final_img, fps)
-
-        cv.imshow('game', final_img)
-
+        cv.imshow('evaluation', frame)
+        video.write(frame)
         key = cv.waitKey(1) & 0xFF
-        if key == ord("q"):
+        if key == ord("q") or frame_count == 100:
             break
+        frame_count += 1
+        pos.append([x, y, w, h, x+w/2, y+h/2])
+    np.savetxt("track_pos.csv", pos, delimiter=",")
+    video.release()
         # if the 's' key is selected, we are going to "select" a bounding
         # box to track
     cv.destroyAllWindows()
 
 def main():
-    final()
+    again = True
+    while again:
+        again = final()
 
 if __name__ == "__main__":
     main()
